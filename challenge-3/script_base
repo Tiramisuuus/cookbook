@@ -2,7 +2,7 @@
 import sys
 import requests
 
-API_KEY = "be508a0a-53f3-455c-ad1a-8afc22852841"
+API_KEY = "api"
 API_URL = "https://radar.scorton.tech/analyze/url"
 
 def scan_domain(domain):
