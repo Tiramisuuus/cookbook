@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+# osint.py - Basic OSINT automation for a domain
+# Usage: python3 osint.py example.com
+
+import sys
+import socket
+import dns.resolver
+import whois
+import requests
+import re
+import time
+from datetime import datetime
+from bs4 import BeautifulSoup
+try:
+    import builtwith
+except ImportError:
+    builtwith = None
+
+def banner():
+    print("=" * 60)
+    print(" 🕵️  OSINT AUTOMATION SCRIPT - by You")
+    print(" Usage: python3 osint.py <domain>")
+    print("=" * 60)
+
+def resolve_dns(domain):
+    print(f"\n[🔍] DNS Resolution for {domain}...")
+    record_types = ['A', 'AAAA', 'MX', 'NS', 'TXT']
+    resolver = dns.resolver.Resolver()
+    for qtype in record_types:
+        try:
+            answers = resolver.resolve(domain, qtype)
+            for rdata in answers:
+                if qtype == 'MX':
+                    print(f"  {qtype}: {rdata.preference} {rdata.exchange}")
+                else:
+                    print(f"  {qtype}: {rdata}")
+        except dns.exception.DNSException as e:
+            print(f"  {qtype}: ❌ No {qtype} records ({e})")
+        except Exception as e:
+            print(f"  {qtype}: ❌ Error ({e})")
+
+def get_whois(domain):
+    print(f"\n[🔍] WHOIS Lookup for {domain}...")
+    try:
+        w = whois.whois(domain)
+        for key, value in w.items():
+            if value:
+                print(f"  {key}: {value}")
+    except Exception as e:
+        print(f"  ❌ WHOIS error: {e}")
+
+def get_subdomains_ct(domain):
+    print(f"\n[🔍] Subdomains via Certificate Transparency (crt.sh)...")
+    url = f"https://crt.sh/?q=%25.{domain}&output=json"
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            subs = set()
+            for entry in data:
+                name = entry.get('name_value', '')
+                if name:
+                    for n in name.split('\n'):
+                        n = n.strip().lower()
+                        if n and n.endswith(domain) and '*' not in n:
+                            subs.add(n)
+            if subs:
+                for s in sorted(subs):
+                    print(f"  {s}")
+            else:
+                print("  ❌ No subdomains found.")
+        else:
+            print(f"  ❌ crt.sh request failed (HTTP {resp.status_code})")
+    except Exception as e:
+        print(f"  ❌ Error fetching subdomains: {e}")
+
+def detect_tech(domain):
+    print(f"\n[🔍] Technology Detection (builtwith)...")
+    if not builtwith:
+        print("  ❌ 'builtwith' not installed. Skipping.")
+        return
+    try:
+        url = f"http://{domain}"
+        tech = builtwith.parse(url)
+        if tech:
+            for category, items in tech.items():
+                print(f"  {category}: {', '.join(items)}")
+        else:
+            print("  ❌ No technologies detected.")
+    except Exception as e:
+        print(f"  ❌ Tech detection error: {e}")
+
+def wayback_urls(domain):
+    print(f"\n[🔍] Wayback Machine URLs (last 100)...")
+    url = f"http://web.archive.org/cdx/search/cdx?url=*.{domain}/*&output=json&limit=100"
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            if len(data) > 1:
+                for entry in data[1:]:
+                    timestamp, original = entry[1], entry[2]
+                    date = datetime.strptime(timestamp, '%Y%m%d%H%M%S').strftime('%Y-%m-%d')
+                    print(f"  [{date}] {original}")
+            else:
+                print("  ❌ No archived URLs found.")
+        else:
+            print(f"  ❌ Wayback request failed (HTTP {resp.status_code})")
+    except Exception as e:
+        print(f"  ❌ Wayback error: {e}")
+
+def main():
+    if len(sys.argv) != 2:
+        print("❌ Usage: python3 osint.py <domain>")
+        sys.exit(1)
+
+    domain = sys.argv[1].lower().strip()
+    if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
+        print("❌ Invalid domain format.")
+        sys.exit(1)
+
+    banner()
+    print(f"\n🎯 Target: {domain}")
+    print(f"⏱️  Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+    resolve_dns(domain)
+    get_whois(domain)
+    get_subdomains_ct(domain)
+    detect_tech(domain)
+    wayback_urls(domain)
+
+    print("\n" + "=" * 60)
+    print("✅ OSINT completed.")
+    print("=" * 60)
+
+if __name__ == "__main__":
+    main()
