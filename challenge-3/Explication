@@ -1,0 +1,2 @@
+Base Script Scorton est le script de base permettant d'utiliser l'API scorton il faut rentré votre code API mettre le code dans un fichier "script.py" puis python3 script.py [domain] 
+Qwen est le script OSINT plus coté DNS, sous domaine et Wayback machine, il demande juste a être copier dans un "script.py" puis python3 script.py [domain]
