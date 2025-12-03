@@ -1,6 +1,7 @@
 # Scorton Hackathon — Cybersecurity Challenges
 
 Antonin, Inouk, Shelter, Gaetan
+
 Analyse Web • Comportements Applicatifs A.K.A Vibe Night• OSINT & Threat Intelligence
 
 Bienvenue dans le **Scorton Cybersecurity Hackathon A.K.A VIBENight **, un ensemble de trois challenges techniques destinés à évaluer et développer vos compétences en analyse de sécurité, investigation, collecte de signaux, et compréhension des menaces modernes.
